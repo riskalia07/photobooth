@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Photobooth</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    ::-webkit-scrollbar { display: none; }
+    .gradient-bg {
+      background: radial-gradient(circle, #d48dee 0%, #f2dcff 70%);
+    }
+    nav { box-shadow: 0 5px 15px rgb(0 0 0 / 0.1); }
+    .notification {
+      background-color: #c3e7f6;
+      border: 1px solid #b6ccdd;
+      border-radius: 0.75rem;
+      box-shadow: 0 4px 10px rgb(0 0 0 / 0.05);
+    }
+    .polaroid {
+      background: white;
+      padding: 0.4rem 0.5rem 1.2rem 0.5rem;
+      box-shadow: 0 10px 25px rgb(0 0 0 / 0.15);
+      border-radius: 0.6rem;
+      max-width: 10rem;
+    }
+    .polaroid-footer {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      font-size: 0.75rem;
+      color: #7b7b7b;
+      padding-top: 0.4rem;
+      text-align: center;
+    }
+    video {
+      border-radius: 1rem;
+      border: 3px solid #3b82f6;
+      width: 640px;
+      height: 480px;
+      background: black;
+      transition: filter 0.3s ease;
+    }
+    .photo img {
+      width: 160px;
+      height: 120px;
+      border-radius: 0.5rem;
+      border: 2px solid #333;
+    }
+  </style>
+</head>
+<body class="bg-white select-none font-sans">
+  <!-- Header -->
+  <header class="bg-blue-100 py-2 text-center text-gray-600 text-sm font-medium select-text">
+    Follow us on Instagram 
+    <a href="#" target="_blank" rel="noopener noreferrer" class="insta-link font-semibold text-gray-700 hover:text-pink-600">@yourinstagram</a>
+  </header>
+
+  <!-- Navigation -->
+  <nav class="mx-auto mt-8 max-w-5xl px-6">
+    <div class="bg-white flex items-center rounded-full shadow-lg px-5 py-3 gap-10 overflow-x-auto no-scrollbar select-text">
+      <a href="#" class="text-2xl font-light flex-shrink-0">photobooth</a>
+      <a href="#" class="text-pink-400 font-semibold hover:text-pink-600">home</a>
+      <a href="#" class="text-gray-600 hover:text-pink-500">about</a>
+      <a href="#" class="text-gray-600 hover:text-pink-500 whitespace-nowrap">privacy policy</a>
+      <a href="#" class="text-gray-600 hover:text-pink-500">contact</a>
+      <a href="#" class="text-gray-600 hover:text-pink-500 whitespace-nowrap">choose layout</a>
+    </div>
+  </nav>
+
+  <!-- Main Section -->
+  <main class="gradient-bg max-w-7xl mx-auto mt-12 rounded-3xl p-12 flex flex-col md:flex-row items-center justify-center gap-20 relative" style="min-height: 500px;">
+    <!-- Left Photo Strip -->
+    <section class="polaroid tilt-left shadow-lg">
+      <img src="photoboot.png" alt="photo strip" />
+      <div class="polaroid-footer">photobooth</div>
+    </section>
+
+    <!-- Camera in Center -->
+    <section class="flex flex-col items-center justify-center gap-4 text-center max-w-lg">
+      <h1 class="text-5xl font-light text-black">photobooth</h1>
+      <p class="text-gray-800 text-sm">Choose filter, set timer, and capture your moment!</p>
+
+      <!-- Camera -->
+      <video id="video" autoplay></video>
+
+      <!-- Controls -->
+      <div class="mt-4 flex flex-wrap gap-3 items-center justify-center">
+        <select id="filter-select" class="border rounded-lg px-3 py-2 text-sm">
+          <option value="none">No Filter</option>
+          <option value="grayscale(100%)">Grayscale</option>
+          <option value="sepia(100%)">Sepia</option>
+          <option value="invert(100%)">Invert</option>
+          <option value="brightness(1.5)">Bright</option>
+          <option value="contrast(2)">High Contrast</option>
+        </select>
+
+        <input type="number" id="timer" placeholder="Timer (sec)" class="border rounded-lg px-3 py-2 text-sm w-32 text-center">
+
+        <button id="capture-btn" class="bg-blue-500 text-white px-6 py-2 rounded-full font-semibold hover:bg-blue-600">Capture</button>
+      </div>
+
+      <!-- Photos -->
+      <div id="photos" class="flex flex-wrap justify-center mt-8"></div>
+    </section>
+
+    <!-- Right Photo Strip -->
+    <section class="polaroid tilt-right shadow-lg">
+      <img src="https://placehold.co/180x400?text=Photo+Strip+2" alt="photo strip" />
+      <div class="polaroid-footer">photobooth</div>
+    </section>
+  </main>
+
+  <!-- Script -->
+  <script>
+    const video = document.getElementById("video");
+    const captureBtn = document.getElementById("capture-btn");
+    const photosContainer = document.getElementById("photos");
+    const timerInput = document.getElementById("timer");
+    const filterSelect = document.getElementById("filter-select");
+
+    // Access camera
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then((stream) => { video.srcObject = stream; })
+      .catch((err) => console.error("Camera error:", err));
+
+    // Apply filter on video preview
+    filterSelect.addEventListener("change", () => {
+      video.style.filter = filterSelect.value;
+    });
+
+    // Capture button with timer
+    captureBtn.addEventListener("click", () => {
+      let timer = parseInt(timerInput.value) || 0;
+
+      if (timer > 0) {
+        captureBtn.disabled = true;
+        let countdown = setInterval(() => {
+          captureBtn.textContent = `Capture (${timer})`;
+          if (timer <= 0) {
+            clearInterval(countdown);
+            captureBtn.textContent = "Capture";
+            captureBtn.disabled = false;
+            capturePhoto();
+          }
+          timer--;
+        }, 1000);
+      } else {
+        capturePhoto();
+      }
+    });
+
+    function capturePhoto() {
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      // Apply selected filter to canvas
+      context.filter = filterSelect.value;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataURL = canvas.toDataURL("image/png");
+
+      const photoDiv = document.createElement("div");
+      photoDiv.classList.add("photo", "relative", "m-4");
+
+      const img = document.createElement("img");
+      img.src = dataURL;
+      photoDiv.appendChild(img);
+
+      const downloadBtn = document.createElement("button");
+      downloadBtn.textContent = "Download";
+      downloadBtn.classList.add("absolute", "bottom-1", "bg-blue-500", "text-white", "px-2", "py-1", "rounded");
+      downloadBtn.addEventListener("click", () => {
+        const a = document.createElement("a");
+        a.href = dataURL;
+        a.download = "photo.png";
+        a.click();
+      });
+
+      photoDiv.appendChild(downloadBtn);
+      photosContainer.appendChild(photoDiv);
+    }
+  </script>
+</body>
+</html>
