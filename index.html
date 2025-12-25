@@ -9,9 +9,8 @@
 
 <style>
   .camera-box {
-    width: 500px;
-    height: 500px;
     position: relative;
+    display: inline-block;
   }
 
   video {
@@ -27,7 +26,7 @@
 <h1 class="text-3xl font-light">photobooth</h1>
 
 <!-- CAMERA + FRAME -->
-<div class="camera-box">
+<div id="cameraBox" class="camera-box">
   <video id="video" autoplay playsinline></video>
 
   <!-- TIMER -->
@@ -37,17 +36,17 @@
   </div>
 
   <!-- FRAME -->
-  <img src="frame.png"
-       class="absolute inset-0 w-full h-full pointer-events-none z-30">
+  <img id="frame" src="frame.png"
+       class="absolute inset-0 pointer-events-none z-30">
 </div>
 
 <!-- CONTROLS -->
-<div class="flex gap-3 mt-2">
+<div class="flex gap-3 mt-3">
   <input id="timer" type="number" placeholder="Timer"
          class="border rounded px-3 py-2 w-24 text-center">
 
   <button id="capture"
-          class="bg-blue-500 text-white px-5 py-2 rounded-full">
+          class="bg-blue-500 text-white px-6 py-2 rounded-full">
     Capture
   </button>
 </div>
@@ -57,15 +56,22 @@
 
 <script>
 const video = document.getElementById("video");
+const frame = document.getElementById("frame");
+const cameraBox = document.getElementById("cameraBox");
 const captureBtn = document.getElementById("capture");
 const timerInput = document.getElementById("timer");
 const countdown = document.getElementById("countdown");
 const result = document.getElementById("result");
 
-const frame = new Image();
-frame.src = "frame.png";
-
 let cameraReady = false;
+let frameReady = false;
+
+// LOAD FRAME → SET UKURAN
+frame.onload = () => {
+  frameReady = true;
+  cameraBox.style.width = frame.naturalWidth + "px";
+  cameraBox.style.height = frame.naturalHeight + "px";
+};
 
 // CAMERA INIT
 navigator.mediaDevices.getUserMedia({ video: true })
@@ -76,8 +82,12 @@ navigator.mediaDevices.getUserMedia({ video: true })
     };
   });
 
+// CAPTURE WITH TIMER
 captureBtn.onclick = () => {
-  if (!cameraReady) return alert("Camera belum siap!");
+  if (!cameraReady || !frameReady) {
+    alert("Camera / frame belum siap");
+    return;
+  }
 
   let time = parseInt(timerInput.value) || 0;
 
@@ -101,18 +111,22 @@ captureBtn.onclick = () => {
 };
 
 function takePhoto() {
+  const w = frame.naturalWidth;
+  const h = frame.naturalHeight;
+
   const canvas = document.createElement("canvas");
-  canvas.width = 500;
-  canvas.height = 500;
+  canvas.width = w;
+  canvas.height = h;
 
   const ctx = canvas.getContext("2d");
 
-  // CAMERA
-  ctx.drawImage(video, 0, 0, 500, 500);
+  // DRAW CAMERA
+  ctx.drawImage(video, 0, 0, w, h);
 
-  // FRAME
-  ctx.drawImage(frame, 0, 0, 500, 500);
+  // DRAW FRAME
+  ctx.drawImage(frame, 0, 0, w, h);
 
+  // SHOW RESULT
   const img = document.createElement("img");
   img.src = canvas.toDataURL("image/png");
   img.className = "w-40 rounded shadow";
