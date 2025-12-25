@@ -4,108 +4,237 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Photobooth</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
+
   <style>
-    ::-webkit-scrollbar { display: none; }
-    .gradient-bg {
-      background: radial-gradient(circle, #d48dee 0%, #f2dcff 70%);
-    }
-    nav { box-shadow: 0 5px 15px rgb(0 0 0 / 0.1); }
-    .notification {
-      background-color: #c3e7f6;
-      border: 1px solid #b6ccdd;
-      border-radius: 0.75rem;
-      box-shadow: 0 4px 10px rgb(0 0 0 / 0.05);
-    }
-    .polaroid {
-      background: white;
-      padding: 0.4rem 0.5rem 1.2rem 0.5rem;
-      box-shadow: 0 10px 25px rgb(0 0 0 / 0.15);
-      border-radius: 0.6rem;
-      max-width: 10rem;
-    }
-    .polaroid-footer {
-      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      font-size: 0.75rem;
-      color: #7b7b7b;
-      padding-top: 0.4rem;
-      text-align: center;
-    }
     video {
-      border-radius: 1rem;
-      border: 3px solid #3b82f6;
       width: 640px;
       height: 480px;
-      background: black;
-      transition: filter 0.3s ease;
+      object-fit: cover;
+      border-radius: 1rem;
     }
-    .photo img {
-      width: 160px;
-      height: 120px;
-      border-radius: 0.5rem;
-      border: 2px solid #333;
+
+    #countdown {
+      text-shadow: 0 0 15px rgba(0,0,0,0.9);
     }
   </style>
 </head>
-<body class="bg-white select-none font-sans">
-  <!-- Header -->
-  <header class="bg-blue-100 py-2 text-center text-gray-600 text-sm font-medium select-text">
-    Follow us on Instagram 
-    <a href="#" target="_blank" rel="noopener noreferrer" class="insta-link font-semibold text-gray-700 hover:text-pink-600">@yourinstagram</a>
-  </header>
 
-  <!-- Navigation -->
-  <nav class="mx-auto mt-8 max-w-5xl px-6">
-    <div class="bg-white flex items-center rounded-full shadow-lg px-5 py-3 gap-10 overflow-x-auto no-scrollbar select-text">
-      <a href="#" class="text-2xl font-light flex-shrink-0">photobooth</a>
-      <a href="#" class="text-pink-400 font-semibold hover:text-pink-600">home</a>
-      <a href="#" class="text-gray-600 hover:text-pink-500">about</a>
-      <a href="#" class="text-gray-600 hover:text-pink-500 whitespace-nowrap">privacy policy</a>
-      <a href="#" class="text-gray-600 hover:text-pink-500">contact</a>
-      <a href="#" class="text-gray-600 hover:text-pink-500 whitespace-nowrap">choose layout</a>
+<body class="flex flex-col items-center justify-center min-h-screen bg-pink-100 gap-6">
+
+  <h1 class="text-4xl font-light">photobooth</h1>
+
+  <!-- CAMERA + FRAME -->
+  <div class="relative w-[640px] h-[480px]">
+    <!-- CAMERA -->
+    <video id="video" autoplay class="absolute inset-0"></video>
+
+    <!-- TIMER -->
+    <div id="countdown"
+      class="absolute inset-0 hidden flex items-center justify-center
+             text-white text-7xl font-bold bg-black/40 rounded-xl z-20">
     </div>
-  </nav>
 
-  <!-- Main Section -->
-  <main class="gradient-bg max-w-7xl mx-auto mt-12 rounded-3xl p-12 flex flex-col md:flex-row items-center justify-center gap-20 relative" style="min-height: 500px;">
-    <!-- Left Photo Strip -->
-    <section class="polaroid tilt-left shadow-lg">
-      <img src="photoboot.png" alt="photo strip" />
-      <div class="polaroid-footer">photobooth</div>
-    </section>
+    <!-- FRAME -->
+    <img
+      src="frame.png"
+      class="absolute inset-0 w-full h-full pointer-events-none z-30"
+      alt="frame"
+    />
+  </div>
 
-    <!-- Camera in Center -->
-    <section class="flex flex-col items-center justify-center gap-4 text-center max-w-lg">
-      <h1 class="text-5xl font-light text-black">photobooth</h1>
-      <p class="text-gray-800 text-sm">Choose filter, set timer, and capture your moment!</p>
+  <!-- CONTROLS -->
+  <div class="flex gap-3">
+    <input type="number" id="timer" placeholder="Timer (sec)"
+      class="border px-3 py-2 rounded w-32 text-center">
 
-      <!-- Camera -->
-      <video id="video" autoplay></video>
+    <button id="capture-btn"
+      class="bg-blue-500 text-white px-6 py-2 rounded-full font-semibold">
+      Capture
+    </button>
+  </div>
 
-      <!-- Controls -->
-      <div class="mt-4 flex flex-wrap gap-3 items-center justify-center">
-        <select id="filter-select" class="border rounded-lg px-3 py-2 text-sm">
-          <option value="none">No Filter</option>
-          <option value="grayscale(100%)">Grayscale</option>
-          <option value="sepia(100%)">Sepia</option>
-          <option value="invert(100%)">Invert</option>
-          <option value="brightness(1.5)">Bright</option>
-          <option value="contrast(2)">High Contrast</option>
-        </select>
+  <!-- RESULT -->
+  <div id="photos" class="flex flex-wrap gap-4 mt-6"></div>
 
-        <input type="number" id="timer" placeholder="Timer (sec)" class="border rounded-lg px-3 py-2 text-sm w-32 text-center">
+  <script>
+    const video = document.getElementById("video");
+    const captureBtn = document.getElementById("capture-btn");
+    const timerInput = document.getElementById("timer");
+    const countdownEl = document.getElementById("countdown");
+    const photos = document.getElementById("photos");
 
-        <button id="capture-btn" class="bg-blue-500 text-white px-6 py-2 rounded-full font-semibold hover:bg-blue-600">Capture</button>
-      </div>
+    const frameImg = new Image();
+    frameImg.src = "frame.png";
 
-      <!-- Photos -->
-      <div id="photos" class="flex flex-wrap justify-center mt-8"></div>
-    </section>
+    // Camera
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => video.srcObject = stream);
 
-    <!-- Right Photo Strip -->
-    <section class="polaroid tilt-right shadow-lg">
-      <img src="https://placehold.co/180x400?text=Photo+Strip+2" alt="photo strip" />
-      <div class="polaroid-footer">photobooth</div>
+    captureBtn.addEventListener("click", () => {
+      let time = parseInt(timerInput.value) || 0;
+
+      if (time > 0) {
+        countdownEl.classList.remove("hidden");
+        countdownEl.textContent = time;
+
+        const interval = setInterval(() => {
+          time--;
+          countdownEl.textContent = time;
+
+          if (time <= 0) {
+            clearInterval(interval);
+            countdownEl.classList.add("hidden");
+            capturePhoto();
+          }
+        }, 1000);
+      } else {
+        capturePhoto();
+      }
+    });
+
+    function capturePhoto() {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      // draw camera
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // draw frame
+      ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
+
+      const img = document.createElement("img");
+      img.src = canvas.toDataURL("image/png");
+      img.className = "w-40 rounded shadow";
+
+      photos.appendChild(img);
+    }
+  </script>
+
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Photobooth</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    video {
+      width: 640px;
+      height: 480px;
+      object-fit: cover;
+      border-radius: 1rem;
+    }
+
+    #countdown {
+      text-shadow: 0 0 15px rgba(0,0,0,0.9);
+    }
+  </style>
+</head>
+
+<body class="flex flex-col items-center justify-center min-h-screen bg-pink-100 gap-6">
+
+  <h1 class="text-4xl font-light">photobooth</h1>
+
+  <!-- CAMERA + FRAME -->
+  <div class="relative w-[640px] h-[480px]">
+    <!-- CAMERA -->
+    <video id="video" autoplay class="absolute inset-0"></video>
+
+    <!-- TIMER -->
+    <div id="countdown"
+      class="absolute inset-0 hidden flex items-center justify-center
+             text-white text-7xl font-bold bg-black/40 rounded-xl z-20">
+    </div>
+
+    <!-- FRAME -->
+    <img
+      src="frame.png"
+      class="absolute inset-0 w-full h-full pointer-events-none z-30"
+      alt="frame"
+    />
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="flex gap-3">
+    <input type="number" id="timer" placeholder="Timer (sec)"
+      class="border px-3 py-2 rounded w-32 text-center">
+
+    <button id="capture-btn"
+      class="bg-blue-500 text-white px-6 py-2 rounded-full font-semibold">
+      Capture
+    </button>
+  </div>
+
+  <!-- RESULT -->
+  <div id="photos" class="flex flex-wrap gap-4 mt-6"></div>
+
+  <script>
+    const video = document.getElementById("video");
+    const captureBtn = document.getElementById("capture-btn");
+    const timerInput = document.getElementById("timer");
+    const countdownEl = document.getElementById("countdown");
+    const photos = document.getElementById("photos");
+
+    const frameImg = new Image();
+    frameImg.src = "frame.png";
+
+    // Camera
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => video.srcObject = stream);
+
+    captureBtn.addEventListener("click", () => {
+      let time = parseInt(timerInput.value) || 0;
+
+      if (time > 0) {
+        countdownEl.classList.remove("hidden");
+        countdownEl.textContent = time;
+
+        const interval = setInterval(() => {
+          time--;
+          countdownEl.textContent = time;
+
+          if (time <= 0) {
+            clearInterval(interval);
+            countdownEl.classList.add("hidden");
+            capturePhoto();
+          }
+        }, 1000);
+      } else {
+        capturePhoto();
+      }
+    });
+
+    function capturePhoto() {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      // draw camera
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // draw frame
+      ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
+
+      const img = document.createElement("img");
+      img.src = canvas.toDataURL("image/png");
+      img.className = "w-40 rounded shadow";
+
+      photos.appendChild(img);
+    }
+  </script>
+
+</body>
+</html>      <div class="polaroid-footer">photobooth</div>
     </section>
   </main>
 
@@ -182,3 +311,4 @@
   </script>
 </body>
 </html>
+
