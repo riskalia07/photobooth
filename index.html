@@ -18,7 +18,7 @@
 
     .polaroid {
       background: white;
-      padding: 0.4rem 0.5rem 1.2rem 0.5rem;
+      padding: 0.4rem 0.5rem 1.2rem;
       box-shadow: 0 10px 25px rgb(0 0 0 / 0.15);
       border-radius: 0.6rem;
       max-width: 10rem;
@@ -31,7 +31,6 @@
       text-align: center;
     }
 
-    /* === CAMERA 1:1 === */
     .camera-wrapper {
       position: relative;
       width: 360px;
@@ -55,6 +54,10 @@
       pointer-events: none;
     }
 
+    .photo {
+      position: relative;
+    }
+
     .photo img {
       width: 160px;
       height: 160px;
@@ -62,93 +65,65 @@
       border-radius: 0.5rem;
       border: 2px solid #333;
     }
+
+    .download-btn {
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #3b82f6;
+      color: white;
+      font-size: 0.7rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
   </style>
 </head>
 
-<body class="bg-white font-sans select-none">
+<body class="bg-white font-sans">
 
-  <!-- HEADER -->
-  <header class="bg-blue-100 py-2 text-center text-gray-600 text-sm">
-    Follow us on Instagram
-    <span class="font-semibold">@yourinstagram</span>
-  </header>
+  <main class="gradient-bg max-w-6xl mx-auto mt-12 rounded-3xl p-12 flex flex-col items-center gap-6">
 
-  <!-- NAV -->
-  <nav class="mx-auto mt-8 max-w-5xl px-6">
-    <div class="bg-white flex items-center rounded-full px-5 py-3 gap-6 overflow-x-auto">
-      <span class="text-2xl font-light">photobooth</span>
-      <a class="text-pink-400 font-semibold">home</a>
-      <a class="text-gray-600">about</a>
-      <a class="text-gray-600">privacy</a>
-      <a class="text-gray-600">contact</a>
-    </div>
-  </nav>
-
-  <!-- MAIN -->
-  <main class="gradient-bg max-w-7xl mx-auto mt-12 rounded-3xl p-12 flex flex-col md:flex-row gap-16 justify-center items-center">
-
-    <!-- LEFT -->
-    <section class="polaroid">
-      <img src="photoboot.png">
-      <div class="polaroid-footer">photobooth</div>
-    </section>
+    <h1 class="text-4xl font-light">photobooth</h1>
 
     <!-- CAMERA -->
-    <section class="flex flex-col items-center gap-4">
+    <div class="camera-wrapper">
+      <video id="video" autoplay playsinline></video>
+      <img src="frame.png" class="frame-overlay">
+    </div>
 
-      <h1 class="text-5xl font-light">photobooth</h1>
-      <p class="text-sm text-gray-700">Capture your moment ✨</p>
+    <!-- CONTROLS -->
+    <div class="flex gap-3">
+      <select id="filter-select" class="border rounded px-3 py-2 text-sm">
+        <option value="none">No Filter</option>
+        <option value="grayscale(100%)">Grayscale</option>
+        <option value="sepia(100%)">Sepia</option>
+      </select>
 
-      <!-- CAMERA WITH FRAME -->
-      <div class="camera-wrapper">
-        <video id="video" autoplay playsinline></video>
-        <img src="frame.png" class="frame-overlay">
-      </div>
+      <input id="timer" type="number" placeholder="Timer"
+        class="border rounded px-3 py-2 w-24 text-center text-sm">
 
-      <!-- CONTROLS -->
-      <div class="flex flex-wrap gap-3 justify-center mt-4">
-        <select id="filter-select" class="border rounded-lg px-3 py-2 text-sm">
-          <option value="none">No Filter</option>
-          <option value="grayscale(100%)">Grayscale</option>
-          <option value="sepia(100%)">Sepia</option>
-          <option value="invert(100%)">Invert</option>
-          <option value="brightness(1.4)">Bright</option>
-          <option value="contrast(1.8)">Contrast</option>
-        </select>
+      <button id="capture-btn"
+        class="bg-blue-500 text-white px-6 py-2 rounded-full font-semibold">
+        Capture
+      </button>
+    </div>
 
-        <input type="number" id="timer" placeholder="Timer (sec)"
-          class="border rounded-lg px-3 py-2 w-28 text-center text-sm">
-
-        <button id="capture-btn"
-          class="bg-blue-500 text-white px-6 py-2 rounded-full font-semibold">
-          Capture
-        </button>
-      </div>
-
-      <!-- PHOTOS -->
-      <div id="photos" class="flex flex-wrap justify-center mt-6"></div>
-
-    </section>
-
-    <!-- RIGHT -->
-    <section class="polaroid">
-      <img src="photoboot.png">
-      <div class="polaroid-footer">photobooth</div>
-    </section>
+    <!-- PHOTOS -->
+    <div id="photos" class="flex flex-wrap justify-center mt-4"></div>
 
   </main>
 
-  <!-- SCRIPT -->
   <script>
     const video = document.getElementById("video");
     const captureBtn = document.getElementById("capture-btn");
-    const photosContainer = document.getElementById("photos");
+    const photos = document.getElementById("photos");
     const timerInput = document.getElementById("timer");
     const filterSelect = document.getElementById("filter-select");
 
     navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => video.srcObject = stream)
-      .catch(err => alert("Camera error"));
+      .then(stream => video.srcObject = stream);
 
     filterSelect.addEventListener("change", () => {
       video.style.filter = filterSelect.value;
@@ -189,14 +164,27 @@
       frame.onload = () => {
         ctx.drawImage(frame, 0, 0, canvas.width, canvas.height);
 
-        const img = document.createElement("img");
-        img.src = canvas.toDataURL("image/png");
+        const dataURL = canvas.toDataURL("image/png");
 
         const div = document.createElement("div");
         div.className = "photo m-3";
-        div.appendChild(img);
 
-        photosContainer.appendChild(div);
+        const img = document.createElement("img");
+        img.src = dataURL;
+
+        const btn = document.createElement("button");
+        btn.textContent = "Download";
+        btn.className = "download-btn";
+        btn.onclick = () => {
+          const a = document.createElement("a");
+          a.href = dataURL;
+          a.download = "photobooth.png";
+          a.click();
+        };
+
+        div.appendChild(img);
+        div.appendChild(btn);
+        photos.appendChild(div);
       };
     }
   </script>
