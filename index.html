@@ -8,9 +8,11 @@
 <script src="https://cdn.tailwindcss.com"></script>
 
 <style>
-  .camera-box {
+  .camera-wrapper {
+    width: 100%;
+    max-width: 360px;   /* aman di HP */
+    aspect-ratio: 1 / 1;
     position: relative;
-    display: inline-block;
   }
 
   video {
@@ -21,68 +23,68 @@
 </style>
 </head>
 
-<body class="min-h-screen flex flex-col items-center justify-center bg-pink-100 gap-4">
+<body class="bg-pink-100 px-4 py-6">
 
-<h1 class="text-3xl font-light">photobooth</h1>
+<div class="flex flex-col items-center gap-4">
 
-<!-- CAMERA + FRAME -->
-<div id="cameraBox" class="camera-box">
-  <video id="video" autoplay playsinline></video>
+  <h1 class="text-3xl font-light">photobooth</h1>
 
-  <!-- TIMER -->
-  <div id="countdown"
-    class="absolute inset-0 hidden flex items-center justify-center
-           text-white text-7xl font-bold bg-black/40 z-20">
+  <!-- CAMERA + FRAME -->
+  <div class="camera-wrapper">
+    <video id="video" autoplay playsinline></video>
+
+    <!-- TIMER -->
+    <div id="countdown"
+      class="absolute inset-0 hidden flex items-center justify-center
+             text-white text-7xl font-bold bg-black/40 z-20">
+    </div>
+
+    <!-- FRAME -->
+    <img src="frame.png"
+      class="absolute inset-0 w-full h-full pointer-events-none z-30">
   </div>
 
-  <!-- FRAME -->
-  <img id="frame" src="frame.png"
-       class="absolute inset-0 pointer-events-none z-30">
+  <!-- CONTROLS (AMPUH DI HP) -->
+  <div class="flex gap-3">
+    <input id="timer" type="number" placeholder="Timer"
+      class="border rounded px-3 py-2 w-24 text-center">
+
+    <button id="capture"
+      class="bg-blue-500 text-white px-6 py-2 rounded-full font-semibold">
+      Capture
+    </button>
+  </div>
+
+  <!-- RESULT -->
+  <div id="result" class="flex flex-wrap gap-4 justify-center mt-4"></div>
+
 </div>
-
-<!-- CONTROLS -->
-<div class="flex gap-3 mt-3">
-  <input id="timer" type="number" placeholder="Timer"
-         class="border rounded px-3 py-2 w-24 text-center">
-
-  <button id="capture"
-          class="bg-blue-500 text-white px-6 py-2 rounded-full">
-    Capture
-  </button>
-</div>
-
-<!-- RESULT -->
-<div id="result" class="flex gap-4 mt-6"></div>
 
 <script>
 const video = document.getElementById("video");
-const frame = document.getElementById("frame");
-const cameraBox = document.getElementById("cameraBox");
 const captureBtn = document.getElementById("capture");
 const timerInput = document.getElementById("timer");
 const countdown = document.getElementById("countdown");
 const result = document.getElementById("result");
 
+const frame = new Image();
+frame.src = "frame.png";
+
 let cameraReady = false;
 let frameReady = false;
 
-// LOAD FRAME → SET UKURAN
-frame.onload = () => {
-  frameReady = true;
-  cameraBox.style.width = frame.naturalWidth + "px";
-  cameraBox.style.height = frame.naturalHeight + "px";
-};
+// LOAD FRAME
+frame.onload = () => frameReady = true;
 
 // CAMERA INIT
-navigator.mediaDevices.getUserMedia({ video: true })
-  .then(stream => {
-    video.srcObject = stream;
-    video.onloadedmetadata = () => {
-      cameraReady = true;
-    };
-  });
+navigator.mediaDevices.getUserMedia({
+  video: { facingMode: "user" }
+}).then(stream => {
+  video.srcObject = stream;
+  video.onloadedmetadata = () => cameraReady = true;
+});
 
-// CAPTURE WITH TIMER
+// CAPTURE
 captureBtn.onclick = () => {
   if (!cameraReady || !frameReady) {
     alert("Camera / frame belum siap");
@@ -111,20 +113,20 @@ captureBtn.onclick = () => {
 };
 
 function takePhoto() {
-  const w = frame.naturalWidth;
-  const h = frame.naturalHeight;
+  // 🔥 INSTAGRAM SIZE
+  const SIZE = 1080;
 
   const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
+  canvas.width = SIZE;
+  canvas.height = SIZE;
 
   const ctx = canvas.getContext("2d");
 
-  // DRAW CAMERA
-  ctx.drawImage(video, 0, 0, w, h);
+  // CAMERA
+  ctx.drawImage(video, 0, 0, SIZE, SIZE);
 
-  // DRAW FRAME
-  ctx.drawImage(frame, 0, 0, w, h);
+  // FRAME
+  ctx.drawImage(frame, 0, 0, SIZE, SIZE);
 
   // SHOW RESULT
   const img = document.createElement("img");
