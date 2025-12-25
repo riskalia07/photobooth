@@ -1,119 +1,126 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Photobooth</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Photobooth</title>
 
-  <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.tailwindcss.com"></script>
 
-  <style>
-    video {
-      width: 640px;
-      height: 480px;
-      object-fit: cover;
-      border-radius: 1rem;
-    }
+<style>
+  .camera-box {
+    width: 500px;
+    height: 500px;
+    position: relative;
+  }
 
-    #countdown {
-      text-shadow: 0 0 15px rgba(0,0,0,0.9);
-    }
-  </style>
+  video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+</style>
 </head>
 
-<body class="flex flex-col items-center justify-center min-h-screen bg-pink-100 gap-6">
+<body class="min-h-screen flex flex-col items-center justify-center bg-pink-100 gap-4">
 
-  <h1 class="text-4xl font-light">photobooth</h1>
+<h1 class="text-3xl font-light">photobooth</h1>
 
-  <!-- CAMERA + FRAME -->
-  <div class="relative w-[640px] h-[480px]">
-    <!-- CAMERA -->
-    <video id="video" autoplay class="absolute inset-0"></video>
+<!-- CAMERA + FRAME -->
+<div class="camera-box">
+  <video id="video" autoplay playsinline></video>
 
-    <!-- TIMER -->
-    <div id="countdown"
-      class="absolute inset-0 hidden flex items-center justify-center
-             text-white text-7xl font-bold bg-black/40 rounded-xl z-20">
-    </div>
-
-    <!-- FRAME -->
-    <img
-      src="frame.png"
-      class="absolute inset-0 w-full h-full pointer-events-none z-30"
-      alt="frame"
-    />
+  <!-- TIMER -->
+  <div id="countdown"
+    class="absolute inset-0 hidden flex items-center justify-center
+           text-white text-7xl font-bold bg-black/40 z-20">
   </div>
 
-  <!-- CONTROLS -->
-  <div class="flex gap-3">
-    <input type="number" id="timer" placeholder="Timer (sec)"
-      class="border px-3 py-2 rounded w-32 text-center">
+  <!-- FRAME -->
+  <img src="frame.png"
+       class="absolute inset-0 w-full h-full pointer-events-none z-30">
+</div>
 
-    <button id="capture-btn"
-      class="bg-blue-500 text-white px-6 py-2 rounded-full font-semibold">
-      Capture
-    </button>
-  </div>
+<!-- CONTROLS -->
+<div class="flex gap-3 mt-2">
+  <input id="timer" type="number" placeholder="Timer"
+         class="border rounded px-3 py-2 w-24 text-center">
 
-  <!-- RESULT -->
-  <div id="photos" class="flex flex-wrap gap-4 mt-6"></div>
+  <button id="capture"
+          class="bg-blue-500 text-white px-5 py-2 rounded-full">
+    Capture
+  </button>
+</div>
 
-  <script>
-    const video = document.getElementById("video");
-    const captureBtn = document.getElementById("capture-btn");
-    const timerInput = document.getElementById("timer");
-    const countdownEl = document.getElementById("countdown");
-    const photos = document.getElementById("photos");
+<!-- RESULT -->
+<div id="result" class="flex gap-4 mt-6"></div>
 
-    const frameImg = new Image();
-    frameImg.src = "frame.png";
+<script>
+const video = document.getElementById("video");
+const captureBtn = document.getElementById("capture");
+const timerInput = document.getElementById("timer");
+const countdown = document.getElementById("countdown");
+const result = document.getElementById("result");
 
-    // Camera
-    navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => video.srcObject = stream);
+const frame = new Image();
+frame.src = "frame.png";
 
-    captureBtn.addEventListener("click", () => {
-      let time = parseInt(timerInput.value) || 0;
+let cameraReady = false;
 
-      if (time > 0) {
-        countdownEl.classList.remove("hidden");
-        countdownEl.textContent = time;
+// CAMERA INIT
+navigator.mediaDevices.getUserMedia({ video: true })
+  .then(stream => {
+    video.srcObject = stream;
+    video.onloadedmetadata = () => {
+      cameraReady = true;
+    };
+  });
 
-        const interval = setInterval(() => {
-          time--;
-          countdownEl.textContent = time;
+captureBtn.onclick = () => {
+  if (!cameraReady) return alert("Camera belum siap!");
 
-          if (time <= 0) {
-            clearInterval(interval);
-            countdownEl.classList.add("hidden");
-            capturePhoto();
-          }
-        }, 1000);
-      } else {
-        capturePhoto();
+  let time = parseInt(timerInput.value) || 0;
+
+  if (time > 0) {
+    countdown.classList.remove("hidden");
+    countdown.textContent = time;
+
+    const interval = setInterval(() => {
+      time--;
+      countdown.textContent = time;
+
+      if (time <= 0) {
+        clearInterval(interval);
+        countdown.classList.add("hidden");
+        takePhoto();
       }
-    });
+    }, 1000);
+  } else {
+    takePhoto();
+  }
+};
 
-    function capturePhoto() {
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
+function takePhoto() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 500;
+  canvas.height = 500;
 
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+  const ctx = canvas.getContext("2d");
 
-      // draw camera
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  // CAMERA
+  ctx.drawImage(video, 0, 0, 500, 500);
 
-      // draw frame
-      ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
+  // FRAME
+  ctx.drawImage(frame, 0, 0, 500, 500);
 
-      const img = document.createElement("img");
-      img.src = canvas.toDataURL("image/png");
-      img.className = "w-40 rounded shadow";
+  const img = document.createElement("img");
+  img.src = canvas.toDataURL("image/png");
+  img.className = "w-40 rounded shadow";
 
-      photos.appendChild(img);
-    }
-  </script>
+  result.appendChild(img);
+}
+</script>
 
 </body>
 </html>
+
