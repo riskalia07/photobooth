@@ -1,1 +1,233 @@
 
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Photobooth</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+::-webkit-scrollbar { display: none; }
+
+body {
+  background:#f8fafc;
+}
+
+.gradient-bg {
+  background: radial-gradient(circle at top, #e9d5ff 0%, #f5f3ff 60%);
+}
+
+.camera-wrapper {
+  position: relative;
+  width: 360px;
+  height: 360px;
+}
+
+.camera-wrapper video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 1.25rem;
+  border: 4px solid #3b82f6;
+  background: black;
+}
+
+.frame-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.photo {
+  position: relative;
+}
+
+.photo img {
+  width: 170px;
+  height: 170px;
+  object-fit: cover;
+  border-radius: 0.75rem;
+  border: 2px solid #e5e7eb;
+  transition:.25s;
+}
+
+.photo:hover img {
+  transform: translateY(-4px);
+  box-shadow: 0 15px 30px rgb(0 0 0 / .15);
+}
+
+.download-btn {
+  position:absolute;
+  bottom:8px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#3b82f6;
+  color:white;
+  font-size:.7rem;
+  padding:5px 14px;
+  border-radius:999px;
+  opacity:0;
+  transition:.25s;
+}
+
+.photo:hover .download-btn {
+  opacity:1;
+}
+</style>
+</head>
+
+<body class="font-sans">
+
+<main class="max-w-6xl mx-auto mt-12 p-10 rounded-[2rem] gradient-bg shadow-xl">
+
+  <!-- TITLE -->
+  <header class="text-center mb-10">
+    <h1 class="text-4xl font-semibold tracking-wide text-gray-800">PHOTOBOOTH</h1>
+    <p class="text-sm text-gray-500 mt-2">Capture your moment ✨</p>
+  </header>
+
+  <!-- CAMERA -->
+  <section class="flex flex-col items-center gap-6">
+
+    <div class="camera-wrapper">
+      <video id="video" autoplay playsinline></video>
+      <img src="frame.png" class="frame-overlay">
+    </div>
+
+    <!-- CONTROLS -->
+    <div class="flex flex-wrap justify-center gap-3 bg-white p-4 rounded-full shadow-md">
+
+      <select id="filterSelect"
+        class="border rounded-full px-4 py-2 text-sm">
+        <option value="none">Normal</option>
+        <option value="grayscale(100%)">Grayscale</option>
+        <option value="sepia(100%)">Sepia</option>
+        <option value="brightness(120%)">Bright</option>
+        <option value="sepia(60%) contrast(110%)">Vintage</option>
+        <option value="contrast(110%) saturate(120%) hue-rotate(180deg)">Cool</option>
+      </select>
+
+      <input id="timer"
+        type="number"
+        placeholder="Timer"
+        class="border rounded-full px-4 py-2 w-24 text-center text-sm">
+
+      <button id="mirrorBtn"
+        class="px-4 py-2 rounded-full bg-gray-200 text-sm">
+        Mirror ON
+      </button>
+
+      <button id="captureBtn"
+        class="bg-blue-500 hover:bg-blue-600 transition text-white px-8 py-2 rounded-full font-semibold">
+        Capture
+      </button>
+
+    </div>
+  </section>
+
+  <!-- PHOTOS -->
+  <section class="mt-12">
+    <h2 class="text-center text-lg font-medium text-gray-700 mb-6">
+      Your Photos
+    </h2>
+    <div id="photos" class="flex flex-wrap justify-center gap-6"></div>
+  </section>
+
+</main>
+
+<script>
+const video = document.getElementById("video");
+const captureBtn = document.getElementById("captureBtn");
+const photos = document.getElementById("photos");
+const timerInput = document.getElementById("timer");
+const filterSelect = document.getElementById("filterSelect");
+const mirrorBtn = document.getElementById("mirrorBtn");
+
+let isMirror = true;
+
+/* CAMERA */
+navigator.mediaDevices.getUserMedia({ video: true })
+  .then(stream => video.srcObject = stream);
+
+/* MIRROR TOGGLE */
+video.style.transform = "scaleX(-1)";
+
+mirrorBtn.onclick = () => {
+  isMirror = !isMirror;
+  video.style.transform = isMirror ? "scaleX(-1)" : "none";
+  mirrorBtn.textContent = isMirror ? "Mirror ON" : "Mirror OFF";
+};
+
+/* FILTER PREVIEW */
+filterSelect.onchange = () => {
+  video.style.filter = filterSelect.value;
+};
+
+/* CAPTURE */
+captureBtn.onclick = () => {
+  let timer = parseInt(timerInput.value) || 0;
+
+  if (timer > 0) {
+    captureBtn.disabled = true;
+    const interval = setInterval(() => {
+      captureBtn.textContent = `Capture (${timer})`;
+      timer--;
+      if (timer < 0) {
+        clearInterval(interval);
+        captureBtn.textContent = "Capture";
+        captureBtn.disabled = false;
+        capturePhoto();
+      }
+    }, 1000);
+  } else {
+    capturePhoto();
+  }
+};
+
+function capturePhoto() {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  canvas.width = 1080;
+  canvas.height = 1080;
+
+  ctx.filter = filterSelect.value;
+
+  /* IMPORTANT: TIDAK mirror canvas */
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  const frame = new Image();
+  frame.src = "frame.png";
+  frame.onload = () => {
+    ctx.drawImage(frame, 0, 0, canvas.width, canvas.height);
+
+    const dataURL = canvas.toDataURL("image/png");
+
+    const div = document.createElement("div");
+    div.className = "photo";
+
+    const img = document.createElement("img");
+    img.src = dataURL;
+
+    const btn = document.createElement("button");
+    btn.className = "download-btn";
+    btn.textContent = "Download";
+    btn.onclick = () => {
+      const a = document.createElement("a");
+      a.href = dataURL;
+      a.download = "photobooth.png";
+      a.click();
+    };
+
+    div.appendChild(img);
+    div.appendChild(btn);
+    photos.appendChild(div);
+  };
+}
+</script>
+
+</body>
+</html>
