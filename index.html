@@ -10,25 +10,12 @@
   <style>
     ::-webkit-scrollbar { display: none; }
 
+    body {
+      background: #f8fafc;
+    }
+
     .gradient-bg {
-      background: radial-gradient(circle, #d48dee 0%, #f2dcff 70%);
-    }
-
-    nav { box-shadow: 0 5px 15px rgb(0 0 0 / 0.1); }
-
-    .polaroid {
-      background: white;
-      padding: 0.4rem 0.5rem 1.2rem;
-      box-shadow: 0 10px 25px rgb(0 0 0 / 0.15);
-      border-radius: 0.6rem;
-      max-width: 10rem;
-    }
-
-    .polaroid-footer {
-      font-size: 0.75rem;
-      color: #7b7b7b;
-      padding-top: 0.4rem;
-      text-align: center;
+      background: radial-gradient(circle at top, #e9d5ff 0%, #f5f3ff 60%);
     }
 
     .camera-wrapper {
@@ -41,16 +28,14 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      border-radius: 1rem;
-      border: 3px solid #3b82f6;
+      border-radius: 1.25rem;
+      border: 4px solid #3b82f6;
       background: black;
     }
 
     .frame-overlay {
       position: absolute;
       inset: 0;
-      width: 100%;
-      height: 100%;
       pointer-events: none;
     }
 
@@ -59,53 +44,375 @@
     }
 
     .photo img {
-      width: 160px;
-      height: 160px;
+      width: 170px;
+      height: 170px;
       object-fit: cover;
-      border-radius: 0.5rem;
-      border: 2px solid #333;
+      border-radius: 0.75rem;
+      border: 2px solid #e5e7eb;
+      background: white;
+      transition: transform .25s ease, box-shadow .25s ease;
+    }
+
+    .photo:hover img {
+      transform: translateY(-4px);
+      box-shadow: 0 15px 30px rgb(0 0 0 / .15);
     }
 
     .download-btn {
       position: absolute;
-      bottom: 6px;
+      bottom: 8px;
       left: 50%;
       transform: translateX(-50%);
       background: #3b82f6;
       color: white;
       font-size: 0.7rem;
-      padding: 4px 10px;
+      padding: 5px 14px;
       border-radius: 999px;
-      cursor: pointer;
+      opacity: 0;
+      transition: .25s;
+    }
+
+    .photo:hover .download-btn {
+      opacity: 1;
     }
   </style>
 </head>
 
-<body class="bg-white font-sans">
+<body class="font-sans">
 
-  <main class="gradient-bg max-w-6xl mx-auto mt-12 rounded-3xl p-12 flex flex-col items-center gap-6">
+  <main class="max-w-6xl mx-auto mt-12 p-10 rounded-[2rem] gradient-bg shadow-xl">
 
-    <h1 class="text-4xl font-light">photobooth</h1>
+    <!-- TITLE -->
+    <header class="text-center mb-10">
+      <h1 class="text-4xl font-semibold tracking-wide text-gray-800">
+        PHOTOBOOTH
+      </h1>
+      <p class="text-sm text-gray-500 mt-2">
+        Capture your moment ✨
+      </p>
+    </header>
 
     <!-- CAMERA -->
-    <div class="camera-wrapper">
-      <video id="video" autoplay playsinline></video>
-      <img src="frame.png" class="frame-overlay">
-    </div>
+    <section class="flex flex-col items-center gap-6">
+      <div class="camera-wrapper">
+        <video id="video" autoplay playsinline></video>
+        <img src="frame.png" class="frame-overlay">
+      </div>
 
-    <!-- CONTROLS -->
-    <div class="flex gap-3">
-      <select id="filter-select" class="border rounded px-3 py-2 text-sm">
-        <option value="none">No Filter</option>
-        <option value="grayscale(100%)">Grayscale</option>
-        <option value="sepia(100%)">Sepia</option>
-      </select>
+      <!-- CONTROLS -->
+      <div class="flex flex-wrap justify-center gap-3 bg-white p-4 rounded-full shadow-md">
+        <select id="filter-select"
+          class="border rounded-full px-4 py-2 text-sm focus:outline-none">
+          <option value="none">No Filter</option>
+          <option value="grayscale(100%)">Grayscale</option>
+          <option value="sepia(100%)">Sepia</option>
+        </select>
 
-      <input id="timer" type="number" placeholder="Timer"
-        class="border rounded px-3 py-2 w-24 text-center text-sm">
+        <input id="timer" type="number" placeholder="Timer"
+          class="border rounded-full px-4 py-2 w-24 text-center text-sm focus:outline-none">
 
-      <button id="capture-btn"
-        class="bg-blue-500 text-white px-6 py-2 rounded-full font-semibold">
+        <button id="capture-btn"
+          class="bg-blue-500 hover:bg-blue-600 transition text-white px-8 py-2 rounded-full font-semibold">
+          Capture
+        </button>
+      </div>
+    </section>
+
+    <!-- PHOTOS -->
+    <section class="mt-12">
+      <h2 class="text-center text-lg font-medium text-gray-700 mb-6">
+        Your Photos
+      </h2>
+
+      <div id="photos" class="flex flex-wrap justify-center gap-6"></div>
+    </section>
+
+  </main>
+
+  <script>
+    const video = document.getElementById("video");
+    const captureBtn = document.getElementById("capture-btn");
+    const photos = document.getElementById("photos");
+    const timerInput = document.getElementById("timer");
+    const filterSelect = document.getElementById("filter-select");
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => video.srcObject = stream);
+
+    filterSelect.addEventListener("change", () => {
+      video.style.filter = filterSelect.value;
+    });
+
+    captureBtn.addEventListener("click", () => {
+      let timer = parseInt(timerInput.value) || 0;
+
+      if (timer > 0) {
+        captureBtn.disabled = true;
+        const interval = setInterval(() => {
+          captureBtn.textContent = `Capture (${timer})`;
+          timer--;
+          if (timer < 0) {
+            clearInterval(interval);
+            captureBtn.textContent = "Capture";
+            captureBtn.disabled = false;
+            capturePhoto();
+          }
+        }, 1000);
+      } else {
+        capturePhoto();
+      }
+    });
+
+    function capturePhoto() {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      canvas.width = 1080;
+      canvas.height = 1080;
+
+      ctx.filter = filterSelect.value;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const frame = new Image();
+      frame.src = "frame.png";
+      frame.onload = () => {
+        ctx.drawImage(frame, 0, 0, canvas.width, canvas.height);
+
+        const dataURL = canvas.toDataURL("image/png");
+
+        const div = document.createElement("div");
+        div.className = "photo";
+
+        const img = document.createElement("img");
+        img.src = dataURL;
+
+        const btn = document.createElement("button");
+        btn.textContent = "Download";
+        btn.className = "download-btn";
+        btn.onclick = () => {
+          const a = document.createElement("a");
+          a.href = dataURL;
+          a.download = "photobooth.png";
+          a.click();
+        };
+
+        div.appendChild(img);
+        div.appendChild(btn);
+        photos.appendChild(div);
+      };
+    }
+  </script>
+
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Photobooth</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    ::-webkit-scrollbar { display: none; }
+
+    body {
+      background: #f8fafc;
+    }
+
+    .gradient-bg {
+      background: radial-gradient(circle at top, #e9d5ff 0%, #f5f3ff 60%);
+    }
+
+    .camera-wrapper {
+      position: relative;
+      width: 360px;
+      height: 360px;
+    }
+
+    .camera-wrapper video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 1.25rem;
+      border: 4px solid #3b82f6;
+      background: black;
+    }
+
+    .frame-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .photo {
+      position: relative;
+    }
+
+    .photo img {
+      width: 170px;
+      height: 170px;
+      object-fit: cover;
+      border-radius: 0.75rem;
+      border: 2px solid #e5e7eb;
+      background: white;
+      transition: transform .25s ease, box-shadow .25s ease;
+    }
+
+    .photo:hover img {
+      transform: translateY(-4px);
+      box-shadow: 0 15px 30px rgb(0 0 0 / .15);
+    }
+
+    .download-btn {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #3b82f6;
+      color: white;
+      font-size: 0.7rem;
+      padding: 5px 14px;
+      border-radius: 999px;
+      opacity: 0;
+      transition: .25s;
+    }
+
+    .photo:hover .download-btn {
+      opacity: 1;
+    }
+  </style>
+</head>
+
+<body class="font-sans">
+
+  <main class="max-w-6xl mx-auto mt-12 p-10 rounded-[2rem] gradient-bg shadow-xl">
+
+    <!-- TITLE -->
+    <header class="text-center mb-10">
+      <h1 class="text-4xl font-semibold tracking-wide text-gray-800">
+        PHOTOBOOTH
+      </h1>
+      <p class="text-sm text-gray-500 mt-2">
+        Capture your moment ✨
+      </p>
+    </header>
+
+    <!-- CAMERA -->
+    <section class="flex flex-col items-center gap-6">
+      <div class="camera-wrapper">
+        <video id="video" autoplay playsinline></video>
+        <img src="frame.png" class="frame-overlay">
+      </div>
+
+      <!-- CONTROLS -->
+      <div class="flex flex-wrap justify-center gap-3 bg-white p-4 rounded-full shadow-md">
+        <select id="filter-select"
+          class="border rounded-full px-4 py-2 text-sm focus:outline-none">
+          <option value="none">No Filter</option>
+          <option value="grayscale(100%)">Grayscale</option>
+          <option value="sepia(100%)">Sepia</option>
+        </select>
+
+        <input id="timer" type="number" placeholder="Timer"
+          class="border rounded-full px-4 py-2 w-24 text-center text-sm focus:outline-none">
+
+        <button id="capture-btn"
+          class="bg-blue-500 hover:bg-blue-600 transition text-white px-8 py-2 rounded-full font-semibold">
+          Capture
+        </button>
+      </div>
+    </section>
+
+    <!-- PHOTOS -->
+    <section class="mt-12">
+      <h2 class="text-center text-lg font-medium text-gray-700 mb-6">
+        Your Photos
+      </h2>
+
+      <div id="photos" class="flex flex-wrap justify-center gap-6"></div>
+    </section>
+
+  </main>
+
+  <script>
+    const video = document.getElementById("video");
+    const captureBtn = document.getElementById("capture-btn");
+    const photos = document.getElementById("photos");
+    const timerInput = document.getElementById("timer");
+    const filterSelect = document.getElementById("filter-select");
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => video.srcObject = stream);
+
+    filterSelect.addEventListener("change", () => {
+      video.style.filter = filterSelect.value;
+    });
+
+    captureBtn.addEventListener("click", () => {
+      let timer = parseInt(timerInput.value) || 0;
+
+      if (timer > 0) {
+        captureBtn.disabled = true;
+        const interval = setInterval(() => {
+          captureBtn.textContent = `Capture (${timer})`;
+          timer--;
+          if (timer < 0) {
+            clearInterval(interval);
+            captureBtn.textContent = "Capture";
+            captureBtn.disabled = false;
+            capturePhoto();
+          }
+        }, 1000);
+      } else {
+        capturePhoto();
+      }
+    });
+
+    function capturePhoto() {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      canvas.width = 1080;
+      canvas.height = 1080;
+
+      ctx.filter = filterSelect.value;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const frame = new Image();
+      frame.src = "frame.png";
+      frame.onload = () => {
+        ctx.drawImage(frame, 0, 0, canvas.width, canvas.height);
+
+        const dataURL = canvas.toDataURL("image/png");
+
+        const div = document.createElement("div");
+        div.className = "photo";
+
+        const img = document.createElement("img");
+        img.src = dataURL;
+
+        const btn = document.createElement("button");
+        btn.textContent = "Download";
+        btn.className = "download-btn";
+        btn.onclick = () => {
+          const a = document.createElement("a");
+          a.href = dataURL;
+          a.download = "photobooth.png";
+          a.click();
+        };
+
+        div.appendChild(img);
+        div.appendChild(btn);
+        photos.appendChild(div);
+      };
+    }
+  </script>
+
+</body>
+</html>
+class="bg-blue-500 text-white px-6 py-2 rounded-full font-semibold">
         Capture
       </button>
     </div>
@@ -191,4 +498,5 @@
 
 </body>
 </html>
+
 
