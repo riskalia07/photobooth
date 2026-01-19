@@ -229,6 +229,23 @@ function capturePhoto() {
 
 </body>
 </html>
+    btn.textContent = "Download";
+    btn.onclick = () => {
+      const a = document.createElement("a");
+      a.href = dataURL;
+      a.download = "photobooth.png";
+      a.click();
+    };
+
+    div.appendChild(img);
+    div.appendChild(btn);
+    photos.appendChild(div);
+  };
+}
+</script>
+
+</body>
+</html>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -853,6 +870,7 @@ class="bg-blue-500 text-white px-6 py-2 rounded-full font-semibold">
 
 </body>
 </html>
+
 
 
 
