@@ -2,40 +2,49 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Photobooth · Foto Booth Digital</title>
-  <!-- Tailwind CSS CDN -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#d48dee">
+  <title>Photobooth · Foto Booth Mobile</title>
+  <!-- Tailwind CSS CDN + inter font -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Custom style touch up -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700&display=swap" rel="stylesheet">
   <style>
-    /* Sembunyikan scrollbar biar lebih rapi */
-    ::-webkit-scrollbar {
-      display: none;
+    * {
+      -webkit-tap-highlight-color: transparent;
     }
     body {
-      scrollbar-width: none; /* Firefox */
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: #f1e6ff;
     }
-    .gradient-bg {
-      background: radial-gradient(circle at 30% 20%, #f0c4ff, #e7b0ff 70%, #d48dee);
+    /* sembunyikan scrollbar tapi tetap bisa scroll */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .gradient-bg-mobile {
+      background: radial-gradient(circle at 20% 30%, #f5d0ff, #e0aaff 80%, #c77dff);
     }
     .camera-wrapper {
       position: relative;
-      width: 360px;
-      height: 360px;
+      width: 100%;
+      max-width: 380px;
+      aspect-ratio: 1 / 1;
       margin: 0 auto;
-      box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.3);
-      border-radius: 1.25rem;
+      border-radius: 1.75rem;
+      box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.35), 0 0 0 4px rgba(255,255,240,0.5);
     }
-    /* Video mirror hanya untuk preview, hasil capture tetap normal */
     #videoPreview {
-      transform: scaleX(-1);
       width: 100%;
       height: 100%;
       object-fit: cover;
-      border-radius: 1.25rem;
-      background: #1e1e2f;
+      border-radius: 1.5rem;
+      background: #1a1a2e;
       border: 3px solid white;
-      box-shadow: 0 0 0 2px #3b82f6;
+      transform: scaleX(-1); /* mirror preview saja */
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.3);
     }
     .frame-overlay {
       position: absolute;
@@ -44,468 +53,510 @@
       height: 100%;
       object-fit: contain;
       pointer-events: none;
+      border-radius: 1.5rem;
     }
     .photo-card {
-      position: relative;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-      background: #fef9ff;
-      border-radius: 1rem;
+      background: rgba(255,255,245,0.95);
+      backdrop-filter: blur(2px);
+      border-radius: 1.25rem;
       padding: 8px;
-      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.1);
-    }
-    .photo-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 16px 28px rgba(0, 0, 0, 0.15);
+      transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+      flex-shrink: 0;
+      width: 130px;
     }
     .photo-card img {
-      width: 140px;
-      height: 140px;
+      width: 100%;
+      aspect-ratio: 1 / 1;
       object-fit: cover;
-      border-radius: 0.75rem;
-      border: 2px solid #e0d0ff;
-      display: block;
+      border-radius: 0.9rem;
+      border: 2px solid #ffffff;
+      background: #f3e8ff;
     }
-    .download-photo-btn {
-      position: absolute;
-      bottom: 8px;
-      left: 50%;
-      transform: translateX(-50%);
+    .download-btn-mini {
       background: #3b82f6;
       color: white;
       font-size: 0.7rem;
       font-weight: 600;
-      padding: 5px 12px;
-      border-radius: 999px;
+      padding: 6px 0;
+      border-radius: 60px;
+      text-align: center;
+      margin-top: 8px;
       cursor: pointer;
-      transition: all 0.15s;
-      white-space: nowrap;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      transition: 0.1s linear;
+      width: 100%;
+      display: block;
     }
-    .download-photo-btn:hover {
+    .download-btn-mini:active {
+      transform: scale(0.96);
       background: #2563eb;
-      transform: translateX(-50%) scale(0.96);
     }
-    button:active {
-      transform: scale(0.97);
+    /* horizontal gallery mobile friendly */
+    .gallery-horizontal {
+      display: flex;
+      flex-direction: row;
+      gap: 14px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      padding: 8px 12px 16px 12px;
+      scrollbar-width: thin;
     }
-    select, input, button {
-      transition: all 0.15s;
+    .gallery-horizontal .photo-card {
+      scroll-snap-align: start;
+      flex-shrink: 0;
     }
-    .timer-badge {
-      background: #1e293b;
-      color: white;
-      border-radius: 40px;
+    /* control pill */
+    .control-pill {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      border-radius: 60px;
+      padding: 4px 12px;
+      border: 1px solid rgba(255,255,255,0.6);
     }
-    @media (max-width: 520px) {
-      .camera-wrapper {
-        width: 280px;
-        height: 280px;
-      }
-      .photo-card img {
+    button, select, input {
+      font-size: 16px; /* prevent zoom on iOS */
+    }
+    @media (max-width: 500px) {
+      .photo-card {
         width: 110px;
-        height: 110px;
       }
+      .download-btn-mini {
+        font-size: 0.65rem;
+        padding: 5px 0;
+      }
+      .camera-wrapper {
+        max-width: 92%;
+      }
+    }
+    @media (max-width: 400px) {
+      .photo-card {
+        width: 100px;
+      }
+    }
+    .glass-btn {
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(8px);
+      border: 0.5px solid rgba(255,255,255,0.5);
+    }
+    .glass-btn:active {
+      transform: scale(0.96);
     }
   </style>
 </head>
-<body class="bg-gray-50 font-sans antialiased">
+<body class="bg-gradient-to-br from-[#f9ecff] to-[#e3c9ff] min-h-screen">
 
-  <div class="max-w-6xl mx-auto px-4 py-8 md:py-10">
-    <!-- main card gradient bg -->
-    <div class="gradient-bg rounded-3xl shadow-2xl p-6 md:p-10 flex flex-col items-center gap-7 transition-all">
-
-      <h1 class="text-5xl md:text-6xl font-light tracking-wide text-white drop-shadow-md">📸 photobooth</h1>
-      <p class="text-white/80 text-sm -mt-2 font-medium">klik capture, pilih filter, dan simpan momenmu</p>
-
-      <!-- CAMERA SECTION -->
-      <div class="camera-wrapper">
-        <video id="videoPreview" autoplay playsinline muted></video>
-        <!-- frame overlay (frame.png) -->
-        <img src="frame.png" alt="border frame" class="frame-overlay" id="frameOverlay">
+  <main class="max-w-3xl mx-auto px-3 py-5 md:py-8">
+    <!-- utama card photobooth -->
+    <div class="gradient-bg-mobile rounded-[2rem] shadow-2xl p-5 md:p-7 flex flex-col items-center gap-5 transition-all">
+      
+      <!-- header dengan emoji terang -->
+      <div class="text-center">
+        <h1 class="text-5xl md:text-6xl font-light text-white drop-shadow-lg tracking-tight">📸 photobooth</h1>
+        <p class="text-white/80 text-sm mt-1 font-medium">Tap capture • filter seru • simpan momen</p>
       </div>
 
-      <!-- CONTROLS : FILTER, TIMER, CAPTURE -->
-      <div class="flex flex-wrap justify-center gap-3 mt-2">
-        <div class="relative">
-          <select id="filterSelect" class="bg-white/90 backdrop-blur-sm border border-gray-300 rounded-full px-4 py-2 text-sm font-medium shadow cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400">
-            <option value="none">✨ Normal</option>
+      <!-- AREA KAMERA + FRAME OVERLAY -->
+      <div class="camera-wrapper">
+        <video id="videoPreview" autoplay playsinline muted class="w-full h-full object-cover"></video>
+        <img src="frame.png" alt="photo frame" class="frame-overlay" id="frameOverlayImg">
+      </div>
+
+      <!-- Kontrol filter + timer + capture (mudah di mobile) -->
+      <div class="flex flex-col sm:flex-row gap-3 w-full justify-center items-center mt-1">
+        <!-- filter select modern -->
+        <div class="relative w-full sm:w-auto">
+          <select id="filterSelect" class="control-pill w-full sm:w-44 text-sm font-semibold text-gray-800 py-2.5 px-4 outline-none focus:ring-2 focus:ring-blue-300 cursor-pointer appearance-none bg-white/80">
+            <option value="none">🌈 Normal</option>
             <option value="grayscale(100%)">🖤 Grayscale</option>
-            <option value="sepia(100%)">🟫 Sepia</option>
-            <option value="brightness(120%)">☀️ Bright</option>
-            <option value="contrast(120%)">⚡ Contrast</option>
-            <option value="contrast(110%) saturate(130%) hue-rotate(190deg)">❄️ Cool Cyan</option>
-            <option value="saturate(150%) hue-rotate(15deg) brightness(105%)">🍂 Warm Tone</option>
+            <option value="sepia(100%)">🤎 Sepia</option>
+            <option value="brightness(115%) contrast(105%)">☀️ Bright+</option>
+            <option value="contrast(125%)">⚡ High Contrast</option>
+            <option value="contrast(105%) saturate(140%) hue-rotate(180deg)">❄️ Cool Ice</option>
+            <option value="saturate(150%) hue-rotate(10deg) brightness(102%)">🍁 Warm Gold</option>
+            <option value="grayscale(50%) contrast(110%)">🎞️ Vintage</option>
           </select>
         </div>
 
-        <div class="flex items-center gap-1 bg-white/50 rounded-full pl-4 pr-1 backdrop-blur-sm">
-          <span class="text-sm font-semibold text-gray-700">⏱️</span>
-          <input id="timerInput" type="number" placeholder="detik" value="0" min="0" max="15" step="1"
-            class="w-20 border-0 bg-transparent text-center text-sm font-mono font-bold focus:outline-none focus:ring-0 p-2">
-          <span class="text-xs text-gray-600 pr-2">dtk</span>
+        <!-- timer input angka -->
+        <div class="control-pill flex items-center gap-2 bg-white/80 px-4 py-1.5">
+          <span class="text-gray-700 text-base">⏱️</span>
+          <input id="timerInput" type="number" min="0" max="12" value="0" step="1" class="w-14 text-center font-mono font-bold text-gray-800 bg-transparent focus:outline-none text-base">
+          <span class="text-xs text-gray-600">dtk</span>
         </div>
 
-        <button id="captureButton"
-          class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold px-7 py-2 rounded-full shadow-lg transition flex items-center gap-2">
+        <!-- tombol capture besar & nyaman di tap -->
+        <button id="captureButton" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-all flex items-center gap-2 text-lg justify-center w-full sm:w-auto">
           <span>📷</span> Capture
         </button>
       </div>
 
-      <!-- PHOTO GALLERY -->
-      <div class="w-full mt-4">
-        <div class="flex justify-between items-center mb-3 px-2">
-          <h2 class="text-white font-semibold text-lg drop-shadow">📸 Galeri Fotobooth</h2>
-          <button id="clearAllBtn" class="text-xs bg-white/30 hover:bg-white/50 rounded-full px-3 py-1 text-gray-800 transition">
+      <!-- GALERI FOTO dengan scroll horizontal (mobile friendly) -->
+      <div class="w-full mt-3">
+        <div class="flex justify-between items-center px-1 mb-2">
+          <h2 class="text-white font-semibold text-base md:text-lg drop-shadow flex items-center gap-1">🖼️ Galeri fotomu</h2>
+          <button id="clearAllBtn" class="text-xs bg-white/30 hover:bg-white/50 rounded-full px-3 py-1.5 text-gray-800 font-medium transition active:scale-95">
             Hapus semua
           </button>
         </div>
-        <div id="photoGallery" class="flex flex-wrap justify-center gap-4 max-h-80 overflow-y-auto p-3 rounded-2xl bg-black/20 backdrop-blur-sm">
-          <!-- hasil photo akan muncul disini -->
-          <p id="emptyGalleryMsg" class="text-white/70 text-sm italic py-6">Belum ada foto, klik capture untuk mulai!</p>
+        
+        <!-- container galeri horizontal dengan scroll -->
+        <div id="photoGallery" class="gallery-horizontal no-scrollbar rounded-2xl bg-black/20 backdrop-blur-sm min-h-[180px] items-center">
+          <div id="emptyGalleryMsg" class="text-white/80 text-sm italic text-center w-full py-8 whitespace-nowrap">✨ Belum ada foto, klik Capture ✨</div>
         </div>
+        <p class="text-[11px] text-white/70 text-center mt-2">Geser ke kanan untuk lihat semua foto 📲</p>
       </div>
     </div>
-    <p class="text-center text-xs text-gray-500 mt-5">✨ Hasil foto TIDAK mirror, sesuai tampilan asli kamera + frame otomatis ✨</p>
-  </div>
+    <div class="text-center text-gray-600 text-[11px] mt-4 opacity-70">📸 Hasil foto tidak mirror • Frame otomatis terpasang</div>
+  </main>
 
   <script>
     (function() {
       // ---------- DOM Elements ----------
-      const videoElement = document.getElementById('videoPreview');
+      const video = document.getElementById('videoPreview');
       const captureBtn = document.getElementById('captureButton');
       const filterSelect = document.getElementById('filterSelect');
       const timerInput = document.getElementById('timerInput');
-      const photoGallery = document.getElementById('photoGallery');
-      const emptyMsg = document.getElementById('emptyGalleryMsg');
+      const galleryContainer = document.getElementById('photoGallery');
+      const emptyMsgDiv = document.getElementById('emptyGalleryMsg');
       const clearAllBtn = document.getElementById('clearAllBtn');
 
-      // status & helper
-      let streamActive = null;
-      let isCapturing = false;   // mencegah multi capture saat timer berjalan
+      // state
+      let mediaStream = null;
+      let isProcessing = false;     // cegah double capture
+      let countdownInterval = null;
+      let originalBtnText = '';
 
-      // ---------- 1. INIT KAMERA (mirror untuk preview) ----------
-      async function initCamera() {
-        try {
-          if (streamActive) {
-            // matikan track lama jika ada
-            streamActive.getTracks().forEach(track => track.stop());
-          }
-          const stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 1280 } } });
-          videoElement.srcObject = stream;
-          streamActive = stream;
-          // video play sudah otomatis karena autoplay
-        } catch (err) {
-          console.error("Gagal akses kamera:", err);
-          alert("Tidak dapat mengakses kamera. Pastikan izin diberikan.");
-          captureBtn.disabled = true;
-        }
-      }
-
-      // ---------- 2. Terapkan filter ke video preview (live mirror effect) ----------
-      function applyFilterToPreview() {
-        const selectedFilter = filterSelect.value;
-        videoElement.style.filter = selectedFilter;
-      }
-
-      filterSelect.addEventListener('change', () => {
-        applyFilterToPreview();
-      });
-
-      // ---------- 3. Fungsi capture (final image dengan frame dan tanpa mirror) ----------
-      async function performCapture() {
-        // Cek apakah video siap & stream aktif
-        if (!videoElement.videoWidth || !videoElement.videoHeight) {
-          alert("Kamera belum siap, tunggu sebentar.");
-          return false;
-        }
-
-        // Ukuran final foto persegi 1080x1080 (HD square)
-        const targetSize = 1080;
-        const canvas = document.createElement('canvas');
-        canvas.width = targetSize;
-        canvas.height = targetSize;
-        const ctx = canvas.getContext('2d');
-
-        // Ambil dimensi asli video (bisa landscape/portrait)
-        const vidWidth = videoElement.videoWidth;
-        const vidHeight = videoElement.videoHeight;
-        
-        // Hitung crop center agar square & tidak distort, TAPI kita tetap gambar full aspek rasio agar wajah proporsional
-        // lalu potong jadi persegi (center crop) sehingga hasil tetap bagus & tidak mirror.
-        // Karena preview di-mirror tapi source video asli tidak mirror, drawImage dari videoElement yang sedang dimirror secara visual? 
-        // Hati-hati: videoElement.style.transform = scaleX(-1) hanya mempengaruhi tampilan CSS, 
-        // namun drawImage mengambil frame video asli (non-mirrored) langsung dari stream. Jadi aman.
-        // Untuk membuat hasil potret tidak terbalik, kita drawImage normal dari stream asli (karena videoElement punya Orientasi asli kamera)
-        // Tapi pastikan CSS transform tidak mengubah data pixel. Data tetap original. 
-        // Maka hasil capture akan seperti cermin? tidak akan, karena kita menggunakan asli video frame tanpa mirroring.
-        // Tapi user melihat preview mirror, hasil akhir menjadi normal (seperti foto biasanya). Bagus!
-        
-        // Hitung source cropping area agar square (1:1)
-        let sx = 0, sy = 0, sWidth = vidWidth, sHeight = vidHeight;
-        if (vidWidth > vidHeight) {
-          // landscape: ambil bagian tengah vertikal
-          sWidth = vidHeight;
-          sx = (vidWidth - vidHeight) / 2;
-        } else if (vidHeight > vidWidth) {
-          // portrait: ambil bagian tengah horizontal
-          sHeight = vidWidth;
-          sy = (vidHeight - vidWidth) / 2;
-        }
-        
-        // 1. Gambar video (tidak mirror) dengan crop center agar square
-        ctx.filter = filterSelect.value;   // terapkan filter sesuai pilihan user pada hasil foto
-        ctx.drawImage(videoElement, sx, sy, sWidth, sHeight, 0, 0, targetSize, targetSize);
-        
-        // 2. Overlay frame (frame.png) harus di-load terlebih dahulu
-        // Karena frame gambar eksternal, kita lakukan async image loading. 
-        // Untuk menghindari race condition, kita buat Promise load frame.
-        const frameUrl = "frame.png";
-        const frameImage = await loadImage(frameUrl);
-        if (frameImage) {
-          ctx.drawImage(frameImage, 0, 0, targetSize, targetSize);
-        } else {
-          console.warn("Frame tidak ditemukan, lanjut tanpa frame overlay.");
-        }
-        
-        // 3. Hasilkan dataURL gambar final
-        const finalImageURL = canvas.toDataURL('image/png');
-        
-        // 4. Buat elemen galeri
-        addPhotoToGallery(finalImageURL);
-        return true;
-      }
-
-      // Helper: load gambar dengan Promise (agar frame selalu tergambar)
-      function loadImage(src) {
+      // ---------- helper: load gambar (frame) ----------
+      function loadFrameImage(src) {
         return new Promise((resolve) => {
           const img = new Image();
           img.crossOrigin = "Anonymous";
           img.onload = () => resolve(img);
           img.onerror = () => {
-            console.warn(`Gagal load frame: ${src}`);
+            console.warn(`⚠️ frame tidak ditemukan: ${src}, foto tetap tanpa overlay.`);
             resolve(null);
           };
           img.src = src;
         });
       }
 
-      // ---------- 4. Tambah foto ke galeri (dengan tombol download) ----------
-      function addPhotoToGallery(imageDataUrl) {
-        // Hilangkan pesan empty jika ada
-        if (emptyMsg) emptyMsg.style.display = 'none';
+      // ---------- Inisialisasi kamera + mirror (preview mirror, hasil tetap original) ----------
+      async function initMobileCamera() {
+        try {
+          if (mediaStream) {
+            mediaStream.getTracks().forEach(track => track.stop());
+          }
+          // preferensi kamera belakang / depan? biarkan default (biasanya kamera depan ideal untuk photobooth)
+          const constraints = {
+            video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 1280 } }
+          };
+          const stream = await navigator.mediaDevices.getUserMedia(constraints);
+          video.srcObject = stream;
+          mediaStream = stream;
+          await video.play();
+          // filter awal langsung terapkan
+          applyFilterToPreview();
+        } catch (err) {
+          console.error("Camera error:", err);
+          alert("Tidak bisa akses kamera. Pastikan izin diberikan.");
+          captureBtn.disabled = true;
+        }
+      }
+
+      // filter live preview (video mirror tetap kena filter css)
+      function applyFilterToPreview() {
+        if (video) {
+          video.style.filter = filterSelect.value;
+        }
+      }
+      
+      filterSelect.addEventListener('change', () => {
+        applyFilterToPreview();
+      });
+
+      // ---------- Fungsi capture utama (bawa frame & tanpa mirror) ----------
+      async function capturePhotoWithFrame() {
+        if (!video || video.videoWidth === 0 || video.videoHeight === 0) {
+          alert("Kamera belum siap, tunggu sebentar.");
+          return null;
+        }
         
-        // Buat card foto
-        const cardDiv = document.createElement('div');
-        cardDiv.className = 'photo-card relative';
+        const targetSize = 1080;      // resolusi persegi HD
+        const canvas = document.createElement('canvas');
+        canvas.width = targetSize;
+        canvas.height = targetSize;
+        const ctx = canvas.getContext('2d');
         
-        const imgElement = document.createElement('img');
-        imgElement.src = imageDataUrl;
-        imgElement.alt = 'photobooth snapshot';
-        imgElement.loading = 'lazy';
+        // ambil dimensi asli video (stream original, tanpa mirror css)
+        const vidW = video.videoWidth;
+        const vidH = video.videoHeight;
         
-        const downloadButton = document.createElement('button');
-        downloadButton.textContent = '💾 Download';
-        downloadButton.className = 'download-photo-btn';
-        downloadButton.setAttribute('aria-label', 'download foto');
-        downloadButton.onclick = (e) => {
+        // Crop ke tengah untuk aspek 1:1 tanpa stretching
+        let sx = 0, sy = 0, sWidth = vidW, sHeight = vidH;
+        if (vidW > vidH) {
+          sWidth = vidH;
+          sx = (vidW - vidH) / 2;
+        } else if (vidH > vidW) {
+          sHeight = vidW;
+          sy = (vidH - vidW) / 2;
+        }
+        
+        // Terapkan filter sesuai pilihan pada hasil capture
+        ctx.filter = filterSelect.value;
+        // gambar dari video (data asli tidak mirror)
+        ctx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, targetSize, targetSize);
+        
+        // Overlay frame.png
+        const frameImg = await loadFrameImage("frame.png");
+        if (frameImg) {
+          ctx.drawImage(frameImg, 0, 0, targetSize, targetSize);
+        }
+        
+        // hasil final dataURL
+        return canvas.toDataURL('image/png');
+      }
+      
+      // ---------- menambah foto ke galeri horizontal dengan tombol download ----------
+      function addPhotoToGallery(imageDataURL) {
+        // sembunyikan pesan kosong jika ada
+        if (emptyMsgDiv && emptyMsgDiv.parentNode === galleryContainer) {
+          emptyMsgDiv.style.display = 'none';
+        } else if (document.getElementById('emptyGalleryMsg')) {
+          const oldEmpty = document.getElementById('emptyGalleryMsg');
+          if (oldEmpty && oldEmpty.parentNode === galleryContainer) oldEmpty.style.display = 'none';
+        }
+        
+        // buat card foto
+        const card = document.createElement('div');
+        card.className = 'photo-card';
+        
+        const img = document.createElement('img');
+        img.src = imageDataURL;
+        img.alt = 'photobooth moment';
+        img.loading = 'lazy';
+        
+        const downloadSpan = document.createElement('div');
+        downloadSpan.className = 'download-btn-mini';
+        downloadSpan.innerHTML = '💾 Simpan';
+        downloadSpan.setAttribute('aria-label', 'download foto');
+        
+        // event download
+        downloadSpan.addEventListener('click', (e) => {
           e.stopPropagation();
-          // download image
-          const a = document.createElement('a');
-          a.href = imageDataUrl;
-          a.download = `photobooth_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.png`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-        };
+          const link = document.createElement('a');
+          link.href = imageDataURL;
+          const timestamp = new Date().toISOString().slice(0,19).replace(/:/g, '-');
+          link.download = `photobooth_${timestamp}.png`;
+          link.click();
+        });
         
-        cardDiv.appendChild(imgElement);
-        cardDiv.appendChild(downloadButton);
-        photoGallery.appendChild(cardDiv);
+        card.appendChild(img);
+        card.appendChild(downloadSpan);
+        galleryContainer.appendChild(card);
         
-        // Scroll ke foto terbaru
-        cardDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        // scroll otomatis ke foto terbaru (horizontal)
+        card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        
+        // update pesan kosong jika ternyata setelah add ada foto lalu hapus pesan tambahan
+        const emptyElement = document.getElementById('emptyGalleryMsg');
+        if (emptyElement && galleryContainer.children.length > 1) {
+          emptyElement.style.display = 'none';
+        }
       }
       
-      // ---------- 5. Hapus semua foto ----------
+      // ---------- Hapus semua foto ----------
       function clearAllPhotos() {
-        // Hapus semua child di photoGallery kecuali pesan kosong
-        while (photoGallery.firstChild) {
-          photoGallery.removeChild(photoGallery.firstChild);
+        // hapus semua child kecuali empty message yang asli (kita rebuild)
+        while (galleryContainer.firstChild) {
+          galleryContainer.removeChild(galleryContainer.firstChild);
         }
-        // Tampilkan kembali pesan empty jika dibutuhkan
-        if (emptyMsg) {
-          emptyMsg.style.display = 'block';
-          photoGallery.appendChild(emptyMsg);
+        // buat ulang elemen pesan kosong
+        const newEmpty = document.createElement('div');
+        newEmpty.id = 'emptyGalleryMsg';
+        newEmpty.className = 'text-white/80 text-sm italic text-center w-full py-8 whitespace-nowrap';
+        newEmpty.innerText = '✨ Belum ada foto, klik Capture ✨';
+        galleryContainer.appendChild(newEmpty);
+      }
+      
+      // update tampilan pesan kosong manual setelah hapus
+      function resetEmptyMessage() {
+        const existingEmpty = document.getElementById('emptyGalleryMsg');
+        if (!existingEmpty) {
+          const newEmptyDiv = document.createElement('div');
+          newEmptyDiv.id = 'emptyGalleryMsg';
+          newEmptyDiv.className = 'text-white/80 text-sm italic text-center w-full py-8 whitespace-nowrap';
+          newEmptyDiv.innerText = '✨ Belum ada foto, klik Capture ✨';
+          galleryContainer.appendChild(newEmptyDiv);
         } else {
-          const newEmptyMsg = document.createElement('p');
-          newEmptyMsg.id = 'emptyGalleryMsg';
-          newEmptyMsg.className = 'text-white/70 text-sm italic py-6';
-          newEmptyMsg.innerText = 'Belum ada foto, klik capture untuk mulai!';
-          photoGallery.appendChild(newEmptyMsg);
-          // update referensi
-          window.emptyMsgRef = newEmptyMsg;
+          existingEmpty.style.display = 'block';
+        }
+        // hapus semua card foto
+        const allCards = document.querySelectorAll('.photo-card');
+        allCards.forEach(card => card.remove());
+      }
+      
+      // ---------- Capture dengan timer & state management ----------
+      function cancelTimerIfRunning() {
+        if (countdownInterval) {
+          clearInterval(countdownInterval);
+          countdownInterval = null;
         }
       }
       
-      // ---------- 6. Capture dengan timer & disable double action ----------
-      let timerInterval = null;
-      
-      function resetCaptureButton() {
-        if (timerInterval) {
-          clearInterval(timerInterval);
-          timerInterval = null;
-        }
+      function resetCaptureButtonUI() {
         captureBtn.disabled = false;
         captureBtn.innerHTML = '<span>📷</span> Capture';
-        isCapturing = false;
+        isProcessing = false;
       }
       
-      function startCaptureWithTimer(seconds) {
-        if (isCapturing) {
-          // avoid multiple timers
-          return;
+      async function executeDirectCapture() {
+        if (isProcessing) return false;
+        isProcessing = true;
+        captureBtn.disabled = true;
+        captureBtn.innerHTML = '<span>⏺</span> Memotret...';
+        
+        try {
+          const imageData = await capturePhotoWithFrame();
+          if (imageData) {
+            addPhotoToGallery(imageData);
+          } else {
+            alert("Gagal mengambil foto, cek kamera.");
+          }
+        } catch (error) {
+          console.error("Capture error:", error);
+          alert("Terjadi kesalahan saat mengambil foto.");
+        } finally {
+          resetCaptureButtonUI();
         }
-        isCapturing = true;
+        return true;
+      }
+      
+      function startTimerCountdown(seconds) {
+        if (isProcessing) return;
+        isProcessing = true;
         let remaining = seconds;
         captureBtn.disabled = true;
-        captureBtn.innerHTML = `<span>⏳</span> ${remaining} detik`;
+        captureBtn.innerHTML = `<span>⏱️</span> ${remaining} detik`;
         
-        timerInterval = setInterval(() => {
+        countdownInterval = setInterval(() => {
           remaining--;
           if (remaining >= 0) {
-            captureBtn.innerHTML = `<span>⏳</span> ${remaining} detik`;
+            captureBtn.innerHTML = `<span>⏱️</span> ${remaining} detik`;
           }
           if (remaining < 0) {
-            clearInterval(timerInterval);
-            timerInterval = null;
-            // Ambil foto
-            performCapture().finally(() => {
-              captureBtn.disabled = false;
-              captureBtn.innerHTML = '<span>📷</span> Capture';
-              isCapturing = false;
+            clearInterval(countdownInterval);
+            countdownInterval = null;
+            // eksekusi capture
+            capturePhotoWithFrame().then(imageData => {
+              if (imageData) {
+                addPhotoToGallery(imageData);
+              } else {
+                alert("Gagal mengambil foto, pastikan frame.png ada atau kamera aktif.");
+              }
             }).catch(err => {
-              console.error("Gagal capture:", err);
-              alert("Terjadi kesalahan saat mengambil foto");
-              captureBtn.disabled = false;
-              captureBtn.innerHTML = '<span>📷</span> Capture';
-              isCapturing = false;
+              console.error(err);
+              alert("Error capture");
+            }).finally(() => {
+              resetCaptureButtonUI();
             });
           }
         }, 1000);
       }
       
-      // Handler utama tombol capture
-      function onCaptureClick() {
-        if (isCapturing) {
-          // sedang proses timer/capture, tidak boleh tumpuk
+      function onCaptureTap() {
+        if (isProcessing) {
+          // sedang proses, tidak boleh interupsi
           return;
         }
         
-        let timerValue = parseInt(timerInput.value, 10);
-        if (isNaN(timerValue)) timerValue = 0;
-        timerValue = Math.min(Math.max(timerValue, 0), 20); // batas maks 20dtk
+        let timerVal = parseInt(timerInput.value, 10);
+        if (isNaN(timerVal)) timerVal = 0;
+        timerVal = Math.min(Math.max(timerVal, 0), 12);
         
-        if (timerValue > 0) {
-          startCaptureWithTimer(timerValue);
+        if (timerVal > 0) {
+          startTimerCountdown(timerVal);
         } else {
-          // langsung capture, disable button sebentar biar ga dobel
-          isCapturing = true;
-          captureBtn.disabled = true;
-          captureBtn.innerHTML = '<span>📸</span> Proses...';
-          performCapture().finally(() => {
-            captureBtn.disabled = false;
-            captureBtn.innerHTML = '<span>📷</span> Capture';
-            isCapturing = false;
-          }).catch((err) => {
-            console.error(err);
-            alert("Gagal mengambil foto, cek kamera atau frame.");
-            captureBtn.disabled = false;
-            captureBtn.innerHTML = '<span>📷</span> Capture';
-            isCapturing = false;
-          });
+          executeDirectCapture();
         }
       }
       
-      // ---------- 7. Pastikan frame.png tersedia, fallback ringan ----------
-      // Cek apakah frame.png bisa diakses? (tidak merusak UX, jika gagal akan tetap tanpa frame)
-      function preloadFrameImage() {
-        const testImg = new Image();
-        testImg.onload = () => console.log("✅ frame.png siap digunakan");
-        testImg.onerror = () => console.warn("⚠️ frame.png tidak ditemukan, foto tetap diambil tanpa border. pastikan file frame.png ada di direktori yang sama.");
-        testImg.src = "frame.png";
-      }
-      
-      // ---------- 8. Bersihkan event & cleanup jika halaman ditutup (opsional) ----------
-      window.addEventListener('beforeunload', () => {
-        if (streamActive) {
-          streamActive.getTracks().forEach(track => track.stop());
-        }
-        if (timerInterval) clearInterval(timerInterval);
-      });
-      
-      // ---------- 9. Reset empty gallery message helper ----------
-      function updateEmptyMessage() {
-        const existingMsg = document.getElementById('emptyGalleryMsg');
-        const hasPhotos = photoGallery.children.length > 0 && !(photoGallery.children.length === 1 && photoGallery.children[0].id === 'emptyGalleryMsg');
-        if (!hasPhotos) {
-          if (!existingMsg) {
-            const newMsg = document.createElement('p');
-            newMsg.id = 'emptyGalleryMsg';
-            newMsg.className = 'text-white/70 text-sm italic py-6';
-            newMsg.innerText = 'Belum ada foto, klik capture untuk mulai!';
-            photoGallery.appendChild(newMsg);
-          } else {
-            existingMsg.style.display = 'block';
-          }
-        } else {
-          if (existingMsg) existingMsg.style.display = 'none';
-        }
-      }
-      
-      // override clearAllBtn
+      // ---------- hapus semua tombol dengan konfirmasi ringan (mobile friendly) ----------
       clearAllBtn.addEventListener('click', () => {
-        clearAllPhotos();
-        updateEmptyMessage();
-      });
-      
-      // Mutation observer untuk menjaga empty message pada galeri
-      const observer = new MutationObserver(() => {
-        const hasPhotos = Array.from(photoGallery.children).some(child => child.classList && child.classList.contains('photo-card'));
-        const emptyMsgElem = document.getElementById('emptyGalleryMsg');
-        if (!hasPhotos) {
-          if (!emptyMsgElem) {
-            const newEmpty = document.createElement('p');
-            newEmpty.id = 'emptyGalleryMsg';
-            newEmpty.className = 'text-white/70 text-sm italic py-6';
-            newEmpty.innerText = 'Belum ada foto, klik capture untuk mulai!';
-            photoGallery.appendChild(newEmpty);
-          } else {
-            emptyMsgElem.style.display = 'block';
+        if (galleryContainer.querySelectorAll('.photo-card').length > 0) {
+          if (confirm("Hapus semua foto dari galeri?")) {
+            clearAllPhotos();
           }
         } else {
-          if (emptyMsgElem) emptyMsgElem.style.display = 'none';
+          // jika kosong, tetap reset pesan
+          const emptyElem = document.getElementById('emptyGalleryMsg');
+          if (!emptyElem || emptyElem.style.display === 'none') {
+            clearAllPhotos();
+          }
         }
       });
-      observer.observe(photoGallery, { childList: true, subtree: false });
       
-      // ---------- 10. Init camera dan event listener ----------
-      initCamera();
-      preloadFrameImage();
-      applyFilterToPreview(); // set default filter preview
+      // ---------- Perbaiki empty message ketika galeri berubah (mutation observer opsional) ----------
+      function observeGallery() {
+        const observer = new MutationObserver((mutations) => {
+          const hasPhotoCard = galleryContainer.querySelectorAll('.photo-card').length > 0;
+          const emptyMsgElement = document.getElementById('emptyGalleryMsg');
+          if (!hasPhotoCard) {
+            if (!emptyMsgElement) {
+              const newMsg = document.createElement('div');
+              newMsg.id = 'emptyGalleryMsg';
+              newMsg.className = 'text-white/80 text-sm italic text-center w-full py-8 whitespace-nowrap';
+              newMsg.innerText = '✨ Belum ada foto, klik Capture ✨';
+              galleryContainer.appendChild(newMsg);
+            } else {
+              emptyMsgElement.style.display = 'block';
+            }
+          } else {
+            if (emptyMsgElement) emptyMsgElement.style.display = 'none';
+          }
+        });
+        observer.observe(galleryContainer, { childList: true, subtree: false });
+      }
       
-      captureBtn.addEventListener('click', onCaptureClick);
-      
-      // jika frame gagal load, tidak masalah; kita tetap hasilkan foto pakai frame kosong.
-      // pastikan saat gallery dikosongkan pesan muncul
-      updateEmptyMessage();
-      
-      // bonus: saat video sudah ready, pastikan filter diterapkan ulang jika diperlukan
-      videoElement.addEventListener('loadeddata', () => {
-        applyFilterToPreview();
+      // ---------- handle resize & orientation (memastikan kamera tetap smooth) ----------
+      window.addEventListener('resize', () => {
+        if (video && video.videoWidth) {
+          // tidak perlu reinit, hanya memastikan tidak error.
+        }
       });
       
-      // optional: jika ingin hapus semua foto dan reset tampilan
-      console.log("✨ Photobooth siap pakai! Pastikan file 'frame.png' tersedia di folder yang sama.");
+      // halaman dimuat
+      async function bootstrap() {
+        await initMobileCamera();
+        observeGallery();
+        // pastikan pesan kosong awal
+        const existingEmpty = document.getElementById('emptyGalleryMsg');
+        if (!existingEmpty || galleryContainer.children.length === 0) {
+          if (!existingEmpty) {
+            const freshEmpty = document.createElement('div');
+            freshEmpty.id = 'emptyGalleryMsg';
+            freshEmpty.className = 'text-white/80 text-sm italic text-center w-full py-8 whitespace-nowrap';
+            freshEmpty.innerText = '✨ Belum ada foto, klik Capture ✨';
+            galleryContainer.appendChild(freshEmpty);
+          } else {
+            existingEmpty.style.display = 'block';
+          }
+        }
+        // Preload frame supaya cache
+        const preloadFrame = new Image();
+        preloadFrame.src = "frame.png";
+      }
+      
+      captureBtn.addEventListener('click', onCaptureTap);
+      
+      // Keluar dari halaman matikan track (hemat baterai)
+      window.addEventListener('beforeunload', () => {
+        if (mediaStream) {
+          mediaStream.getTracks().forEach(track => track.stop());
+        }
+        if (countdownInterval) clearInterval(countdownInterval);
+      });
+      
+      bootstrap();
     })();
   </script>
 </body>
